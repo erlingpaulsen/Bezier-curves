@@ -26,5 +26,6 @@ function cubicbezier(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y)
         
     end
     plot(xB, yB, 'LineWidth', 1.5, 'Color', 'k');
+    axis equal;
     
 end
