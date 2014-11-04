@@ -16,11 +16,10 @@ function task2(filename)
     end
     
     for i = 1 : length(Points(:, 1))
-        
+        cubicbezier(Points(i, 1), Points(i, 2), Points(i, 3), Points(i, 4), Points(i, 5), Points(i, 6), Points(i, 7), Points(i, 8));
     end
-
     
-
+    hold off;
 
 end
 
