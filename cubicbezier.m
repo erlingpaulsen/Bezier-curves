@@ -1,4 +1,4 @@
-function cubicbeizer(P0x,P0y,P1x,P1y,P2x,P2y,P3x,P3y)
+function cubicbezier(P0x,P0y,P1x,P1y,P2x,P2y,P3x,P3y)
 
 X=[P0x,P1x,P2x,P3x];
 Y=[P0y,P1y,P2y,P3y];
