@@ -67,6 +67,15 @@ function convertToBezier(filename)
     % Overlays the found corner points.
     hold on;
     plot(X(1,C),X(2,C),'r*','MarkerSize',8);
+    
+    % TODO: Fyll inn resten av algoritmen.
+    %
+    % Bruke least square til å finne P1 og P2 ut i fra to og to
+    % hjørnepunkter fra C
+    %
+    % 
+    %
+    
     hold off;
 
 end
@@ -86,7 +95,6 @@ function plotCubicBezier(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y)
     
     % Plots the four points with filled red circles.
     plot(P0x, P0y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    hold on;
     plot(P1x, P1y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
     plot(P2x, P2y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
     plot(P3x, P3y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
