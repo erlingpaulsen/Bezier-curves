@@ -7,17 +7,33 @@ function svar =approximate()
     
 
    M = [-1 3 -3 1; 3 -6 3 0; -3 3 0 0; 1 0 0 0];
-   syms t;
-   T = [t^3, t^2, t, 0];
+   %T = [t^3, t^2, t, 0];
    %C = [c1, c2 , c3, c4];
+   v0 = [x(2)-x(1), y(2)-y(1)];
+   v3 = [x(36)-x(35), y(36)-y(35)];
+   m = 36;
+   syms a1;
+   syms a2;
+   P0 = [x(1), y(1)];
+   P3 = [x(36), y(36)];
+   P1(a1) = P0 + a1*v0;
+   P2(a2) = P3 + a2*v3;
+   dt = 0.0250000;
+   E = 0;
+   %symsum(expr,var,a,b)
+   syms i;
+   exprx = (x(i) - (P0(1)*(1-t(i))^3 + P1(1)*3*t(i)*(1-t(i))^2 + P2(1)*3*(t(i)^2)*(1-t(i)) + P3(1)*(t(i)^3)))^2;
+   expry = (y(i) - (P0(2)*(1-t(i))^3 + P1(2)*3*t(i)*(1-t(i))^2 + P2(2)*3*((t(i))^2)*(1-t(i)) + P3(2)*(t(i)^3)))^2;
+   E(a1, a2) = 1/m * symsum(exprx +  expry, i, 1, 36); 
+   disp(E)
    
-   d=zeros(1,36);
-   d(1)=0;
-   for i=1:35
-       d(i+1) = sqrt((x(i+1)-x(i))^2+(y(i+1)-y(i))^2);
-   end
+%    d=zeros(1,36);
+%    d(1)=0;
+%    for i=1:35
+%        d(i+1) = sqrt((x(i+1)-x(i))^2+(y(i+1)-y(i))^2);
+%    end
    
-   svar=d;
+   svar=m;
     
 end
     
