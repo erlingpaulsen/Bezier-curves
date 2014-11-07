@@ -26,17 +26,13 @@ function approximate()
      dEda1 = diff(E, a1);
      dEda2 = diff(E, a2);
      
-     S = solve(dEda1 == 0, dEda2 == 0);
+     S = vpasolve(dEda1 == 0, dEda2 == 0);
      
-     P1 = [P0(1) + S.a1*v0(1), P0(2) + S.a1*v0(2)];
-     P2 = [P3(1) + S.a2*v3(1), P3(2) + S.a2*v3(2)];
-     
-     plot(x,y);
+     P1 = double([P0(1) + S.a1*v0(1), P0(2) + S.a1*v0(2)]);
+     P2 = double([P3(1) + S.a2*v3(1), P3(2) + S.a2*v3(2)]);
+     plot(x, y);
      hold on;
-     P1 = round(P1*1000)/1000;
-     P2 = round(P2*1000)/1000;
-     disp(P1);
-     disp(P2);
+        disp(P2);
      cubicbezier(P0(1), P0(2), P1(1), P1(2), P2(1), P2(2), P3(1), P3(2));
      
    
