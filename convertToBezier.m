@@ -76,12 +76,84 @@ function convertToBezier(filename)
     % 
     %
     
+    X2 = X;
+    
+    for c = 1 : length(C)
+        
+        if c == length(C)
+        X = X2(:, C(c) : C(c + 1));
+        
+        % Number of points
+        k = length(X(1, :));
+
+        % List of cummulative length between points
+        d = zeros(1, k);
+        for i = 1 : (k - 1)
+            d(i + 1) = d(i) + (sqrt((X(1, i + 1) - X(1, i))^2 + (X(2, i + 1) - X(2, i))^2)); 
+        end
+
+        % Initial t's
+        ti = d / d(k);
+
+        [P0, P1, P2, P3] = fitCurve(X, ti);
+
+        for i = 1 : 10
+
+            XB = zeros(2, k);
+            XBd = zeros(2, k);
+            XBdd = zeros(2, k);
+
+            count = 1;
+            for t = ti
+
+                B0 = (1 - t)^3;
+                B1 = 3 * t * (1 - t)^2;
+                B2 = 3 * t^2 * (1 - t);
+                B3 = t^3;
+
+                B0d = 3*(1 - t)^2;
+                B1d = 6 * t * (1 - t);
+                B2d = 3 * t^2;
+
+                B0dd = 6*(1 - t);
+                B1dd = 6 * t ;
+
+                XB(:, count) = (P0*B0 + P1*B1 + P2*B2 + P3*B3)';
+                XBd(:, count) = ((P1 - P0)*B0d + (P2 - P1)*B1d + (P3 - P2)*B2d)';
+                XBdd(:, count) = ((P2 - 2*P1 + P0)*B0dd + (P3 - 2*P2 + P1)*B1dd)';
+
+                count = count + 1;
+
+            end
+
+            sX=zeros(2,k);
+            sXd=zeros(2,k);
+            sXdd=zeros(2,k);
+
+            for j = 2 : k - 1
+                sX(:, j) = ((XB(:, j)) - X(:, j)).^2;
+
+                sXd(:, j) = 2*(XB(:, j) - X(:, j)) .* XBd(:, j);
+
+                sXdd(:, j)= (XBd(:, j)).^2 + (XB(:, j) - X(:, j)) .* XBdd(:, j);
+
+                ti(j)= ti(j) - ((sXd(1, j) + sXd(2, j)) / (sXdd(1, j) + sXdd(2, j)));   
+            end
+
+            [P0, P1, P2, P3] = fitCurve(X, ti);
+
+        end
+
+        plotCubicBezier(P0, P1, P2, P3);
+    
+    end
+    
     hold off;
 
 end
 
 
-function plotCubicBezier(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y)
+function plotCubicBezier(P0, P1, P2, P3)
 %PLOTCUBICBEZIER Plots a cubic Bezier curve given by the x- and
 %y-coordinated of four distinct points.
 %
@@ -90,14 +162,14 @@ function plotCubicBezier(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y)
 %          Where i = 0, 1, 2, 3
 %
 
-    X = [P0x, P1x, P2x, P3x];
-    Y = [P0y, P1y, P2y, P3y];
+    X = [P0(1), P1(1), P2(1), P3(1)];
+    Y = [P0(2), P1(2), P2(2), P3(2)];
     
     % Plots the four points with filled red circles.
-    plot(P0x, P0y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P1x, P1y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P2x, P2y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P3x, P3y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P0(1), P0(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P1(1), P1(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P2(1), P2(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P3(1), P3(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
     
     % Plots straight, stippled, red lines between the four points.
     plot(X, Y, 'LineStyle', '--', 'LineWidth', 1, 'Color', 'r');
@@ -117,8 +189,8 @@ function plotCubicBezier(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y)
         B2 = 3 * t^2 * (1 - t);
         B3 = t^3;
         
-        xB(int32(t * (1/step) + 1)) = P0x*B0 + P1x*B1 + P2x*B2 + P3x*B3;
-        yB(int32(t * (1/step) + 1)) = P0y*B0 + P1y*B1 + P2y*B2 + P3y*B3;
+        xB(int32(t * (1/step) + 1)) = P0(1)*B0 + P1(1)*B1 + P2(1)*B2 + P3(1)*B3;
+        yB(int32(t * (1/step) + 1)) = P0(2)*B0 + P1(2)*B1 + P2(2)*B2 + P3(2)*B3;
         
     end
     
