@@ -68,53 +68,54 @@ function convertToBezier(filename)
     hold on;
     plot(X(1,C),X(2,C),'r*','MarkerSize',8);
     
-    % TODO: Fyll inn resten av algoritmen.
-    %
-    % Bruke least square til å finne P1 og P2 ut i fra to og to
-    % hjørnepunkter fra C
-    %
-    % 
-    %
     
-    X2 = X;
-    
+    % Makes a Bezier curve between every corner point.
     for c = 1 : length(C)
         
+        % Xc are the points between two corners.
         if c == length(C)
-        X = X2(:, C(c) : C(c + 1));
+            A = X(:, C(c) : length(X(1, :)));
+            B = X(:, 1 : C(1));
+            Xc = [A B];
+        else
+            Xc = X(:, C(c) : C(c + 1));
+        end
         
-        % Number of points
-        k = length(X(1, :));
+        % Number of points in Xc.
+        k = length(Xc(1, :));
 
-        % List of cummulative length between points
+        % List of cummulative length between points.
         d = zeros(1, k);
         for i = 1 : (k - 1)
-            d(i + 1) = d(i) + (sqrt((X(1, i + 1) - X(1, i))^2 + (X(2, i + 1) - X(2, i))^2)); 
+            d(i + 1) = d(i) + (sqrt((Xc(1, i + 1) - X(1, i))^2 + (Xc(2, i + 1) - Xc(2, i))^2)); 
         end
 
         % Initial t's
         ti = d / d(k);
 
-        [P0, P1, P2, P3] = fitCurve(X, ti);
+        [P0, P1, P2, P3] = fitCurve(Xc, ti);
 
-        for i = 1 : 10
-
+        for i = 1 : 50
+            
             XB = zeros(2, k);
             XBd = zeros(2, k);
             XBdd = zeros(2, k);
 
             count = 1;
             for t = ti
-
+                
+                % Bernstein polynomials.
                 B0 = (1 - t)^3;
                 B1 = 3 * t * (1 - t)^2;
                 B2 = 3 * t^2 * (1 - t);
                 B3 = t^3;
-
+                
+                % First derivative of Bernstein polynomials.
                 B0d = 3*(1 - t)^2;
                 B1d = 6 * t * (1 - t);
                 B2d = 3 * t^2;
 
+                % Second derivative of Bernstein polynomials.
                 B0dd = 6*(1 - t);
                 B1dd = 6 * t ;
 
@@ -125,9 +126,12 @@ function convertToBezier(filename)
                 count = count + 1;
 
             end
-
+            
+            % Distance between original curve and our parametrization.
             sX=zeros(2,k);
+            % First derivative of this distance.
             sXd=zeros(2,k);
+            % Second derivative of this distance.
             sXdd=zeros(2,k);
 
             for j = 2 : k - 1
@@ -141,9 +145,10 @@ function convertToBezier(filename)
             end
 
             [P0, P1, P2, P3] = fitCurve(X, ti);
-
+        
         end
-
+        
+        % Plots the individual Bezier curves.
         plotCubicBezier(P0, P1, P2, P3);
     
     end
