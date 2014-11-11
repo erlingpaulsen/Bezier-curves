@@ -87,15 +87,16 @@ function convertToBezier(filename)
         % List of cummulative length between points.
         d = zeros(1, k);
         for i = 1 : (k - 1)
-            d(i + 1) = d(i) + (sqrt((Xc(1, i + 1) - X(1, i))^2 + (Xc(2, i + 1) - Xc(2, i))^2)); 
+            d(i + 1) = d(i) + (sqrt((Xc(1, i + 1) - Xc(1, i))^2 + (Xc(2, i + 1) - Xc(2, i))^2)); 
         end
 
         % Initial t's
         ti = d / d(k);
 
         [P0, P1, P2, P3] = fitCurve(Xc, ti);
-
-        for i = 1 : 50
+        
+        
+        for i = 1 : 10
             
             XB = zeros(2, k);
             XBd = zeros(2, k);
@@ -135,16 +136,16 @@ function convertToBezier(filename)
             sXdd=zeros(2,k);
 
             for j = 2 : k - 1
-                sX(:, j) = ((XB(:, j)) - X(:, j)).^2;
+                sX(:, j) = ((XB(:, j)) - Xc(:, j)).^2;
 
-                sXd(:, j) = 2*(XB(:, j) - X(:, j)) .* XBd(:, j);
+                sXd(:, j) = 2*(XB(:, j) - Xc(:, j)) .* XBd(:, j);
 
-                sXdd(:, j)= (XBd(:, j)).^2 + (XB(:, j) - X(:, j)) .* XBdd(:, j);
+                sXdd(:, j)= (XBd(:, j)).^2 + (XB(:, j) - Xc(:, j)) .* XBdd(:, j);
 
                 ti(j)= ti(j) - ((sXd(1, j) + sXd(2, j)) / (sXdd(1, j) + sXdd(2, j)));   
             end
 
-            [P0, P1, P2, P3] = fitCurve(X, ti);
+            [P0, P1, P2, P3] = fitCurve(Xc, ti);
         
         end
         

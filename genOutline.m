@@ -2,7 +2,7 @@
 % The image is assumed to consist of a single object whose outline is
 % desired.
 
-I = imread('batman.jpg'); % Read the image file. image(I) displays the image.
+I = imread('fish.jpg'); % Read the image file. image(I) displays the image.
 
 BW = im2bw(I); % Converts the image to a black and white image. Can display
                % the image using imshow(BW);
