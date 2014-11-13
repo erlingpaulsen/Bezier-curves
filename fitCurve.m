@@ -10,10 +10,8 @@ function [P0, P1, P2, P3] = fitCurve(X, ti)
     % Number of points
     m = length(X(1, :));
     
-    %v0 = [(X(1, 2) - X(1, 1) + X(1, 3) - X(1, 1)) / 2, (X(2, 2) - X(2, 1) + X(2, 3) - X(2, 1)) / 2];
     v0 = [X(1, 2) - X(1, 1), X(2, 2) - X(2, 1)];
     v0 = v0/norm(v0);
-    %v3 = [(X(1, m) - X(1, m - 1) + X(1, m) - X(1, m - 2)) / 2, (X(2, m) - X(2, m - 1) + X(2, m) - X(2, m - 2)) / 2];
     v3 = [X(1, m - 1) - X(1, m), X(2, m - 1) - X(2, m)];
     v3 = v3/norm(v3);
     
@@ -50,11 +48,8 @@ function [P0, P1, P2, P3] = fitCurve(X, ti)
     
     a1 = (A22 * A1 - A2 * A12) / (A11 * A22 - A12 * A12);
     a2 = (A11 * A2 - A1 * A12) / (A11 * A22 - A12 * A12);
-    %fprintf('a1: %f    ', a1);
-    %fprintf('a2: %f\n', a2);
     
     P1 = P0 + a1*v0;
     P2 = P3 + a2*v3;
-
 
 end

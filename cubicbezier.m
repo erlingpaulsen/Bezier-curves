@@ -1,13 +1,13 @@
-function cubicbezier(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y)
+function cubicbezier(P0, P1, P2, P3)
 
-    X = [P0x, P1x, P2x, P3x];
-    Y = [P0y, P1y, P2y, P3y];
+    X = [P0(1), P1(1), P2(1), P3(1)];
+    Y = [P0(2), P1(2), P2(2), P3(2)];
     
-    plot(P0x, P0y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P0(1), P0(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
     hold on;
-    plot(P1x, P1y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P2x, P2y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P3x, P3y, 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P1(1), P1(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P2(1), P2(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    plot(P3(1), P3(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
     
     plot(X, Y, 'LineStyle', '--', 'LineWidth', 1, 'Color', 'r');
     
@@ -21,8 +21,8 @@ function cubicbezier(P0x, P0y, P1x, P1y, P2x, P2y, P3x, P3y)
         B2 = 3 * t^2 * (1 - t);
         B3 = t^3;
         
-        xB(int32(t * (1/step) + 1)) = P0x*B0 + P1x*B1 + P2x*B2 + P3x*B3;
-        yB(int32(t * (1/step) + 1)) = P0y*B0 + P1y*B1 + P2y*B2 + P3y*B3;
+        xB(int32(t * (1/step) + 1)) = P0(1)*B0 + P1(1)*B1 + P2(1)*B2 + P3(1)*B3;
+        yB(int32(t * (1/step) + 1)) = P0(2)*B0 + P1(2)*B1 + P2(2)*B2 + P3(2)*B3;
         
     end
     plot(xB, yB, 'LineWidth', 1.5, 'Color', 'k');
