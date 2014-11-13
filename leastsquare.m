@@ -4,12 +4,36 @@ function leastsquare()
     ti=[0.0000000000000000  0.0250000000000000  0.0500000000000000  0.0750000000000000  0.1000000000000000  0.1250000000000000  0.1500000000000000  0.1750000000000000  0.2000000000000000  0.2250000000000000  0.2500000000000000  0.2750000000000000  0.3000000000000000  0.3250000000000000  0.3500000000000000  0.3750000000000000  0.4000000000000000  0.4250000000000000  0.4500000000000000  0.4750000000000000  0.5000000000000000  0.5250000000000000  0.5500000000000000  0.5750000000000000  0.6000000000000000  0.6250000000000000  0.6500000000000000  0.6750000000000000  0.7000000000000000  0.7250000000000000  0.7500000000000000  0.7750000000000000  0.8000000000000000  0.8250000000000000  0.8500000000000000  0.8750000000000000  0.9000000000000000  0.9250000000000000  0.9500000000000000  0.9750000000000000  1.0000000000000000];
 
     m = length(x);
-
-    P0 = [x(1), y(1)];
-    P3 = [x(m), y(m)];
-    v0 = [x(2)-x(1), y(2)-y(1)];
+    %Ha med dette dersom man vil diskretisere tiden vektet på avstand
+    %mellom punkter.
+    %d = zeros(1, m);
+    %for i=1:m-1
+    %   d(i+1) = d(i)+(sqrt((x(i+1)-x(i))^2+(y(i+1)-y(i))^2));
+    %end
+    %ti = d/d(m);
+    teller = 1;
+    %Endre på inkrementet i forløkken for å bruke færre punkter i utregning
+    %av Bezier.
+    for i=1:1:m
+        xs(teller) = x(i);
+        ys(teller) = y(i);
+        ts(teller) = ti(i);
+        teller = teller + 1;
+    end
+    ms = length(xs);
+    disp(ms);
+    if xs(ms) ~= x(m);
+        xs(ms+1) = x(m);
+        ys(ms+1) = y(m);
+        ts(ms+1) = ti(m);
+        ms = ms+1;
+    end
+    %ts = linspace(0, 1, ms);
+    P0 = [xs(1), ys(1)];
+    P3 = [xs(ms), ys(ms)];
+    v0 = [xs(2)-xs(1), ys(2)-ys(1)];
     v0 = v0/norm(v0);
-    v3 = [x(m-1)-x(m), y(m-1)-y(m)];
+    v3 = [xs(ms-1)-xs(ms), ys(ms-1)-ys(ms)];
     v3 = v3/norm(v3);
     teller = 1;
     A1 = 0;
@@ -17,13 +41,13 @@ function leastsquare()
     A12 = 0;
     A22 = 0;
     A2 = 0;
-    for t = ti;
+    for t = ts;
         b0 = (1-t)^3;
         b1 = 3*t*((1-t)^2);
         b2 = 3*(t^2)*(1-t);
         b3 = t^3;
     
-        A = [x(teller), y(teller)] - P0*b0 - P0*b1 - P3*b2 - P3*b3;
+        A = [xs(teller), ys(teller)] - P0*b0 - P0*b1 - P3*b2 - P3*b3;
         A1 = A1 + dot(A, v0)*b1;
         A11 = A11 + dot(v0, v0)*(b1^2);
         A12 = A12 + dot(v0,v3)*b1*b2;
@@ -44,8 +68,8 @@ function leastsquare()
         b3 = ti(i)^3;
         E = E + (norm([x(i), y(i)]-P0*b0-P1*b1-P2*b2-P3*b3))^2;
     end
-    disp(P1);
-    disp(P2);
+    E = E/m;
+    disp(E);
     
     plot(x,y);
     hold on;
