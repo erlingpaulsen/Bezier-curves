@@ -10,6 +10,9 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
     XBd = zeros(2, l);
     % Second derivative of XB.
     XBdd = zeros(2, l);
+    
+    treshold = 0.1;
+    maxIt = 50;
 
     count = 1;
     for t = ti
@@ -47,9 +50,14 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
     for i = 2 : l - 1
         sX(:, i) = ((XB(:, i)) - X(:, i)).^2;
 
-        sXd(:, i) = 2*(XB(:, i) - X(:, i)) .* XBd(:, i);
+        sXd(:, i) = (XB(:, i) - X(:, i)) .* XBd(:, i);
 
         sXdd(:, i)= (XBd(:, i)).^2 + (XB(:, i) - X(:, i)) .* XBdd(:, i);
+        
+        if (sXdd(1, i) + sXdd(2, i)) == 0
+            disp('feil');
+           return;
+        end
 
         newT(i)= newT(i) - ((sXd(1, i) + sXd(2, i)) / (sXdd(1, i) + sXdd(2, i)));   
     end

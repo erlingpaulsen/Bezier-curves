@@ -69,57 +69,112 @@ function convertToBezier(filename)
 
     % Overlays the found corner points.
     hold on;
-    plot(X(1,C),X(2,C),'r*','MarkerSize',8);
+    plot(X(1,C),X(2,C),'b*','MarkerSize',10);
     
     %fprintf('X0 = %.1f, Y0 = %.1f, Xn = %.1f, Yn = %.1f\n', X(1, 1), X(2, 1), X(1, length(X(1, :))), X(2, length(X(1, :))));
+    
+    % Adds the points before the first corner to the end of the list.
     X = horzcat(X, X(:, 1 : C(1)));
+    
+    % Adds the first corner ass the last corner with the right index.
     C = [C, C(length(C)) + C(1)];
+    
+    % A vector that stores 0's for original corners, and 1's for corners
+    % made by splitting a curve.
+    flag = zeros(1, length(C));
+    
+    % Matrix to store all the cruve info.
+    curves = [];
+    
+    % Tangent stack to maintain C1 continuity.
+    tangent = [];
+    
     %fprintf('X0 = %.1f, Y0 = %.1f, Xn = %.1f, Yn = %.1f\n', X(1, 1), X(2, 1), X(1, length(X(1, :))), X(2, length(X(1, :))));
     
     c = 1;
-    treshold = 0.1;
+    treshold = 0.1; % Error treshold for each curve
+    totErr = []; % A list with the error for each curve
+    colorFlag = 1; % For coloring adjacent curves
     
     % Makes a Bezier curve between every corner point.
     while c < length(C)
         
+        % Points between the current corner point and the next one.
         Xc = X(:, C(c) : C(c + 1));
+        
+        % Initial parametrization.
         ti = initT(Xc);
-
-        [P0, P1, P2, P3] = fitCurve(Xc, ti);
+        
+        [tsize, dummy] = size(tangent);
+        if tsize == 0
+            vprev = [];
+            vnext = [];
+        else
+            if tangent(tsize, 5) == 2
+                vprev = [tangent(tsize, 1), tangent(tsize, 2)];
+                vnext = [];
+                tangent(tsize, 5) = 1;
+            elseif tangent(tsize, 5) == 1
+                vprev = [];
+                vnext = [tangent(tsize, 3), tangent(tsize, 4)];
+                tangent(tsize, :) = [];
+            else
+                error('An error occured. Code red. Self destruct in 10.');
+            end
+        end
+            
+        
+        % Initial curve
+        [P0, P1, P2, P3] = fitCurve(Xc, ti, vprev, vnext);
         
         % Optimizing parametrization.
         t = ti;
-        for p = 1 : 5
-            t = optimizeParam(P0, P1, P2, P3, Xc, t);
-        end
+        t = optimizeParam(P0, P1, P2, P3, Xc, t);
         
         % Improved curve.
-        [P0, P1, P2, P3] = fitCurve(Xc, t);
+        [P0, P1, P2, P3] = fitCurve(Xc, t, vprev, vnext);
         
         % Calculating the distance between each point in the original point
         % and the Bezier curve.
         d = distance(P0, P1, P2, P3, Xc, t);
+        
         % The sum of the distance over the curve.
         err = sqrt(sum(d(1, :) + d(2, :))) / length(d(1, :));
         
         % Splits the curve if the error is greater than the treshold
         if err > treshold
-            % Index of the split point in Xc
-            corner = splitBezier(P0, P1, P2, P3, Xc, t);
+            % Index of the split point in Xc, and v0, v3 with C1
+            % continuity.
+            [corner, vnext, vprev] = splitBezier(P0, P1, P2, P3, Xc, t);
+            tangent = [tangent; vprev', vnext', 2];
             
-            % Inserting the new corner point in C.
+            % Inserting the new corner point index in C, and a 1 in flag.
             temp = C;
             C = [temp(1 : c), corner + temp(c), temp(c + 1 : length(temp))];
+            temp = flag;
+            flag = [temp(1 : c), 1, temp(c + 1 : length(temp))];
             
-        % Plots the curve if error is below the treshold
+        % Stores the curve in curves if error is below the treshold
         else
-            plotCubicBezier(P0, P1, P2, P3);
+            curves = [curves; P0, P1, P2, P3, colorFlag];
+            colorFlag = colorFlag + 1; % Incrementing the colorFlag.
+            totErr = [totErr, err]; % Inserting the error.
             c = c + 1;
         end
     
     end
     fprintf('Ferdig med løkke. length(C) = %i, c = %i\n', length(C), c);
     
+    disp(sum(totErr) / length(curves(:, 1))); % Printing total curve error.
+    
+    for i = 1 : length(curves(:, 1))
+        plotCubicBezier([curves(i, 1), curves(i, 2)], [curves(i, 3), curves(i, 4)],...
+            [curves(i, 5), curves(i, 6)], [curves(i, 7), curves(i, 8)], curves(i, 9));
+    end
+    
+    title('Bezier curve plot');
+    xlabel('x');
+    ylabel('y');
     hold off;
 
 end
@@ -173,7 +228,7 @@ function t = initT(X)
     
 end
 
-function [P0, P1, P2, P3] = fitCurve(X, ti)
+function [P0, P1, P2, P3] = fitCurve(X, ti, vprev, vnext)
 %FITCURVE Creates the four Bezier control points from x- and y-coordinates
 %by parametrization and curve fitting.
 %
@@ -183,13 +238,22 @@ function [P0, P1, P2, P3] = fitCurve(X, ti)
 %   OUTPUT: Four Bezier control points.
 
     % Number of points
-    %fprintf('(X0, Y0) = (%.1f, %.1f), (Xn, Yn) = (%.1f, %.1f), length(X) = %i\n', X(1, 1), X(2, 1), X(1, length(X(1, :))), X(2, length(X(1, :))), length(X(1, :)));
     m = length(X(1, :));
     
-    v0 = [X(1, 2) - X(1, 1), X(2, 2) - X(2, 1)];
+    step = ceil(m/100 * 5);
+    if step == 1, step = 2; end
+
+    v0 = [X(1, step) - X(1, 1), X(2, step) - X(2, 1)];
     v0 = v0/norm(v0);
-    v3 = [X(1, m - 1) - X(1, m), X(2, m - 1) - X(2, m)];
+    v3 = [X(1, m - step) - X(1, m), X(2, m - step) - X(2, m)];
     v3 = v3/norm(v3);
+    
+    if isempty(vprev) && ~isempty(vnext)
+        v0 = vnext;
+    elseif isempty(vnext) && ~isempty(vprev)
+        v3 = vprev;
+    end
+
     
     P0 = [X(1, 1), X(2, 1)];
     P3 = [X(1, m), X(2, m)]; 
@@ -235,6 +299,7 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
 %   Detailed explanation goes here
     
     l = length(X(1, :));
+    oldT = zeros(1, l);
     newT = ti;
     % Points along the Bezier curve.
     XB = zeros(2, l);
@@ -242,56 +307,77 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
     XBd = zeros(2, l);
     % Second derivative of XB.
     XBdd = zeros(2, l);
+    
+    treshold = 0.1;
+    maxIt = 1000;
+    it = 1;
+    
+    while sum(oldT - newT)^2 > treshold && it < maxIt
 
-    count = 1;
-    for t = ti
+        count = 1;
+        for t = ti
 
-        % Bernstein polynomials.
-        B0 = (1 - t)^3;
-        B1 = 3 * t * (1 - t)^2;
-        B2 = 3 * t^2 * (1 - t);
-        B3 = t^3;
+            % Bernstein polynomials.
+            B0 = (1 - t)^3;
+            B1 = 3 * t * (1 - t)^2;
+            B2 = 3 * t^2 * (1 - t);
+            B3 = t^3;
 
-        % First derivative of Bernstein polynomials.
-        B0d = 3*(1 - t)^2;
-        B1d = 6 * t * (1 - t);
-        B2d = 3 * t^2;
+            % First derivative of Bernstein polynomials.
+            B0d = 3*(1 - t)^2;
+            B1d = 6 * t * (1 - t);
+            B2d = 3 * t^2;
 
-        % Second derivative of Bernstein polynomials.
-        B0dd = 6*(1 - t);
-        B1dd = 6 * t ;
+            % Second derivative of Bernstein polynomials.
+            B0dd = 6*(1 - t);
+            B1dd = 6 * t ;
 
-        XB(:, count) = (P0*B0 + P1*B1 + P2*B2 + P3*B3)';
-        XBd(:, count) = ((P1 - P0)*B0d + (P2 - P1)*B1d + (P3 - P2)*B2d)';
-        XBdd(:, count) = ((P2 - 2*P1 + P0)*B0dd + (P3 - 2*P2 + P1)*B1dd)';
+            XB(:, count) = (P0*B0 + P1*B1 + P2*B2 + P3*B3)';
+            XBd(:, count) = ((P1 - P0)*B0d + (P2 - P1)*B1d + (P3 - P2)*B2d)';
+            XBdd(:, count) = ((P2 - 2*P1 + P0)*B0dd + (P3 - 2*P2 + P1)*B1dd)';
 
-        count = count + 1;
+            count = count + 1;
 
+        end
+
+        % Distance between original curve and our parametrization.
+        sX=zeros(2,l);
+        % First derivative of this distance.
+        sXd=zeros(2,l);
+        % Second derivative of this distance.
+        sXdd=zeros(2,l);
+        
+        oldT = newT;
+        for i = 2 : l - 1
+            sX(:, i) = ((XB(:, i)) - X(:, i)).^2;
+
+            sXd(:, i) = (XB(:, i) - X(:, i)) .* XBd(:, i);
+
+            sXdd(:, i)= (XBd(:, i)).^2 + (XB(:, i) - X(:, i)) .* XBdd(:, i);
+
+            if (sXdd(1, i) + sXdd(2, i)) < 0.000001
+                disp('feil');
+               return;
+            end
+
+            newT(i)= newT(i) - ((sXd(1, i) + sXd(2, i)) / (sXdd(1, i) + sXdd(2, i)));   
+        end
+        
+        newT = newT/newT(l);
+        it = it + 1;
     end
-
-    % Distance between original curve and our parametrization.
-    sX=zeros(2,l);
-    % First derivative of this distance.
-    sXd=zeros(2,l);
-    % Second derivative of this distance.
-    sXdd=zeros(2,l);
-
-    for i = 2 : l - 1
-        sX(:, i) = ((XB(:, i)) - X(:, i)).^2;
-
-        sXd(:, i) = 2*(XB(:, i) - X(:, i)) .* XBd(:, i);
-
-        sXdd(:, i)= (XBd(:, i)).^2 + (XB(:, i) - X(:, i)) .* XBdd(:, i);
-
-        newT(i)= newT(i) - ((sXd(1, i) + sXd(2, i)) / (sXdd(1, i) + sXdd(2, i)));   
-    end
+    disp(it);
 
 end
 
-function split = splitBezier(P0, P1, P2, P3, X, t)
+function [split, v0, v3] = splitBezier(P0, P1, P2, P3, X, t)
 %SPLITBEZIER Splits a Bezier curve at maximum error point, and return four
 %new control points for two new Bezier curves
-%   Detailed explanation goes here
+% 
+%   INPUT: Pi (Control point number i for a Bezier curve)
+%          Where i = 0, 1, 2, 3
+%          X (Matrix with points)
+%          t
     
     l = length(X(1, :));
     
@@ -301,24 +387,24 @@ function split = splitBezier(P0, P1, P2, P3, X, t)
     imax = find(dmax == (d(1, :) + d(2, :)));
     
     split = imax;
-%     
-%     XR = X(:, 1 : imax);
-%     XS = X(:, imax : l);
-% 
-%     tR = initT(XR);
-%     tS = initT(XS);
-%     
-%     [R0, R1, R2, R3] = fitCurve(XR, tR);
-%     [S0, S1, S2, S3] = fitCurve(XS, tS);
+    
+    a = X(:, split); % Split point.
+    b = X(:, split + 1); % First point after split point.
+    c = X(:, split - 1); % First point before split point.
+    
+    tempv3 = c - a;
+    tempv0 = b - a;
+    
+    v3 = (tempv3 - tempv0) / norm(tempv3 - tempv0);
+    v0 = -v3;
 
 end
 
-function plotCubicBezier(P0, P1, P2, P3)
+function plotCubicBezier(P0, P1, P2, P3, colorFlag)
 %PLOTCUBICBEZIER Plots a cubic Bezier curve given by the x- and
 %y-coordinated of four distinct points.
 %
-%   INPUT: Pix (x-coordinate to point number i)
-%          Piy (y-coordinate to point number i)
+%   INPUT: Pi (Control point number i for a Bezier curve)
 %          Where i = 0, 1, 2, 3
 %
 
@@ -354,8 +440,14 @@ function plotCubicBezier(P0, P1, P2, P3)
         
     end
     
-    % Plotting the Bezier curve in black.
-    plot(xB, yB, 'LineWidth', 1.5, 'Color', 'k');
+    if mod(colorFlag, 2) == 0
+        % Plotting the Bezier curve in green.
+        plot(xB, yB, 'LineWidth', 1.5, 'Color', [0 0.8 0]);
+    else
+        % Plotting the Bezier curve in blue.
+        plot(xB, yB, 'LineWidth', 1.5, 'Color', 'b');
+    end
+    
     axis equal;
 
 end
