@@ -1,4 +1,4 @@
-function splitbezier2(x, y, v0, v3)
+function Elist = splitbezier2(x, y, v0, v3, lx)
 % x = linspace(0,1,101);
 % y = sin(pi*x);
 m = length(x);
@@ -11,11 +11,11 @@ ti = d/d(m);
 P0 = [x(1), y(1)];
 P3 = [x(m), y(m)];
 if v0 == 0;
-    v0 = [x(2)-x(1), y(2)-y(1)];
+    v0 = [1, pi*cos(pi*x(1))];
     v0 = v0/norm(v0);
 end
 if v3==0;
-    v3 = [x(m-1)-x(m), y(m-1)-y(m)];
+    v3 = [-1, -pi*cos(pi*x(m))];
     v3 = v3/norm(v3);
 end
 
@@ -51,22 +51,24 @@ E = 0;
         b1 = 3*ti(i)*(1-ti(i))^2;
         b2 = 3*(ti(i)^2)*(1-ti(i));
         b3 = ti(i)^3;
-        E = E + (norm([x(i), y(i)]-P0*b0-P1*b1-P2*b2-P3*b3))^2;
+        S = P0*b0 + (P1*b1) + (P2*b2) + (P3*b3);
+        E = E + (norm([x(i), y(i)]-S))^2;
     end
     E = E/m;
-    if E > 0.00000001;
-        v20 = [x(floor(m/2)-1)-x(floor(m/2)), y(floor(m/2)-1)-y(floor(m/2))];
+    Elist = [];
+    if length(x) > lx;
+        v20 = [1, pi*cos(pi*x(floor(m/2)))];
         v20 = v20/norm(v20);
-        v21 = [x(floor(m/2)+1)-x(floor(m/2)), y(floor(m/2)+1)-y(floor(m/2))];
-        v21 = v21/norm(v21);
-        v2 = v20-v21;
-        v2 = v2/norm(v2);
-        splitbezier2(x(1:floor(m/2)), y(1:floor(m/2)), v0, -v2);
-        splitbezier2(x(floor(m/2):m), y(floor(m/2):m), v2, v3);
+        %v21 = [x(floor(m/2)+1)-x(floor(m/2)), y(floor(m/2)+1)-y(floor(m/2))];
+        %v21 = v21/norm(v21);
+        %v2 = v20-v21;
+        v2 = v20/norm(v20);
+        Elist = [Elist, splitbezier2(x(1:floor(m/2)), y(1:floor(m/2)), v0, -v2, lx), ...
+            splitbezier2(x(floor(m/2):m), y(floor(m/2):m), v2, v3, lx)];
     else
-        disp(E);
+        Elist = [E];
         plot(x,y);
         hold on;
-        cubicbezier(P0(1), P0(2), P1(1), P1(2), P2(1), P2(2), P3(1), P3(2));
+        cubicbezier(P0, P1, P2, P3);
     end
 end
