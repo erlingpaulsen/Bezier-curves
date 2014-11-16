@@ -91,28 +91,31 @@ function convertToBezier(filename)
     % Error treshold for each curve.
     errList = []; % A list with the error for each curve.
     colorFlag = 1; % For coloring adjacent curves.
+    splitCount = 0; % Counts number of splits.
     
-%     xtest = linspace(0, 1, 1000);
-%     ytest = sin(pi*xtest);
+    %xtest = linspace(0, 1, 1000);
+    %ytest = sin(pi*xtest);
+%     xtest = [-2.0000000000000000 -1.9900095166399880 -1.9604352202265733 -1.9124473886531921 -1.8479270408896213 -1.7693657878779678 -1.6797334297990107 -1.5823205857872562 -1.4805650134826276 -1.3778711689435199 -1.2774329231045609 -1.1820691689841958 -1.0940813343339346 -1.0151405971764766 -0.9462109540099681 -0.8875123034485414 -0.8385254915624213 -0.7980389416901280 -0.7642341894453175 -0.7348054902675931 -0.7071067811865477 -0.6783177647010343 -0.6456198244848970 -0.6063719385004512 -0.5582767551049996 -0.4995275418736065 -0.4289277750600726 -0.3459766513932762 -0.2509156895939807 -0.1447337423783132 -0.0291300417718178  0.0935627759435417  0.2204915028125257  0.3484248994685338  0.4739181455454290  0.5934901854586080  0.7038042352542520  0.8018415342404277  0.8850587907655991  0.9515206646401961  0.9999999999999998];
+%     ytest = [-0.0000000000000002  0.0785196081826872  0.1569174458721380  0.2350691476799097  0.3128452182202336  0.3901086156222856  0.4667125105489297  0.5424982747558325  0.6172937494799466  0.6909118393701043  0.7631494723325429  0.8337869596396903  0.9025877840308228  0.9692988364166278  1.0336511142920473  1.0953608871751803  1.1541313264407198  1.2096545889237820  1.2616143357542522  1.3096886601626476  1.3535533905932737  1.3928857284824336  1.4273681736161741  1.4566926841738781  1.4805650134826271  1.4987091612341636  1.5108718735219759  1.5168271235984572  1.5163805037762810  1.5093734584351104  1.4956872886612853  1.4752468606462859  1.4480239525869567  1.4140401784394196  1.3733694314378115  1.3261397957431493  1.2725348808683927  1.2127945405527212  1.1472149454394973  1.0761479871471193  1.0000000000000004];
 %     X = [];
 %     X(1, :) = xtest;
 %     X(2, :) = ytest;
 %     C = [];
 %     C(1) = 1;
-%     C(2) = 1000;
+%     %C(2) = 1000;
+%     C(2) = 41;
 %     hold off;
 %     plot(xtest, ytest);
 %     hold on;
 
     treshold = ((max(X(1, :)) + max(X(2, :))) / 2) / 10^3;
-    disp(treshold);
     
     % Makes a Bezier curve between every corner point.
     while c < length(C)
         
         % Points between the current corner point and the next one.
         Xc = X(:, C(c) : C(c + 1));
-        l = length(Xc(1, :));
+        l = length(Xc(1, :)); % Number of points.
         
         % Initial parametrization.
         ti = initT(Xc);
@@ -121,18 +124,18 @@ function convertToBezier(filename)
         
         vprev = [];
         vnext = [];
+        
+        % Checks if a corner point is a split point, if so v0 and v3 are
+        % given, to maintain C1 continuity.
         for i = 1 : height
             if C(c) == tangent(i, 3)
                 vnext = -[tangent(i, 1), tangent(i, 2)];
             end
-        end
-        
-        for j = 1 : height
-            if C(c + 1) == tangent(j, 3)
-                vprev = [tangent(j, 1), tangent(j, 2)];
-            end
-        end
             
+            if C(c + 1) == tangent(i, 3)
+                vprev = [tangent(i, 1), tangent(i, 2)];
+            end
+        end          
         
         % Initial curve.
         [P0, P1, P2, P3] = fitCurve(Xc, ti, vprev, vnext);
@@ -157,6 +160,7 @@ function convertToBezier(filename)
             % Index of the split point in Xc, and v0, v3 with C1
             % continuity.
             [corner, vprev] = splitBezier(P0, P1, P2, P3, Xc, t);
+            splitCount = splitCount + 1;
             
             % Inserting the new corner point index in C, and a 1 in flag.
             temp = C;
@@ -173,19 +177,34 @@ function convertToBezier(filename)
         end
     
     end
-    fprintf('Ferdig med løkke. length(C) = %i, c = %i\n', length(C), c);
-
-    totErr = sum(errList) / length(curves(:, 1));
-    fprintf('Total curve error: %f\n', totErr); % Printing total curve error.
     
+    % Sum of error over all curves divided by number of curves.
+    totErr = sum(errList) / length(curves(:, 1)); 
+    
+    % Plotting all the Bezier curves.
     for i = 1 : length(curves(:, 1))
         plotCubicBezier([curves(i, 1), curves(i, 2)], [curves(i, 3), curves(i, 4)],...
             [curves(i, 5), curves(i, 6)], [curves(i, 7), curves(i, 8)], curves(i, 9));
     end
     
+    % Printing a table of results.
+    fprintf('----------------------------- RESULTS -------------------------------\n');
+    fprintf('Number of splits: %i\n', splitCount);
+    fprintf('Number of curves: %i\n', length(curves(:, 1)));
+    fprintf('Total curve error: %f\n\n', totErr);
+    fprintf('Discription of plot:\n');
+    fprintf('    - Blue star: Original corner point\n');
+    fprintf('    - Red dots: Bezier curve control point\n');
+    fprintf('    - Red stippled line: Straight line between control points\n');
+    fprintf('    - Thin black line: Original curve\n');
+    fprintf('    - Blue or green line: Bezier curve\n');
+    fprintf('----------------------------------------------------------------------\n');
+    
     title('Bezier curve plot');
     xlabel('x');
     ylabel('y');
+    fig = figure(1);
+    set(fig, 'Position', [0, 100, 1200, 800]) % Plot size and position.
     hold off;
 
 end
@@ -243,7 +262,6 @@ function t = initT(X)
    d = zeros(1, m);
 
    %initial t
-   d(1) = 0;
    for i = 1 : m - 1
        % List of cummulative length between points.
        d(i + 1) = d(i) + (sqrt((X(1, i + 1) - X(1, i))^2 + (X(2, i + 1) - X(2, i))^2));
@@ -442,7 +460,7 @@ function [split, v3] = splitBezier(P0, P1, P2, P3, X, t)
     dmax = max(d);
     imax = find(dmax == d, 1);
     
-    % If split point is too close to the end points, we choose the middle
+    % If the split point is too close to the end points, we choose the middle
     % point.
     if imax < 5 || imax > l - 6
         imax = floor(l/2);
@@ -457,6 +475,7 @@ function [split, v3] = splitBezier(P0, P1, P2, P3, X, t)
     tempv3 = c - a;
     tempv0 = b - a;
     
+    % Creates start and end vectors for the split point, where v0 = -v3.
     v3 = (tempv3 - tempv0) / norm(tempv3 - tempv0);
 
 end
@@ -472,14 +491,14 @@ function plotCubicBezier(P0, P1, P2, P3, colorFlag)
     X = [P0(1), P1(1), P2(1), P3(1)];
     Y = [P0(2), P1(2), P2(2), P3(2)];
     
-    % Plots the four points with filled red circles.
-    plot(P0(1), P0(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P1(1), P1(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P2(1), P2(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
-    plot(P3(1), P3(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 5);
+    % Plots the four control points with filled red circles.
+    plot(P0(1), P0(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
+    plot(P1(1), P1(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
+    plot(P2(1), P2(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
+    plot(P3(1), P3(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
     
-    % Plots straight, stippled, red lines between the four points.
-    plot(X, Y, 'LineStyle', '--', 'LineWidth', 2, 'Color', 'r');
+    % Plots straight, stippled, red lines between the control points.
+    plot(X, Y, 'LineStyle', '--', 'LineWidth', 1, 'Color', 'r');
     
     % The step size for 0 < t < 1.
     step = 0.0001;
