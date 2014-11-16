@@ -1,0 +1,9 @@
+@ARTICLE{Mplass,
+AUTHOR="Michael Plass","Maureen Stone",
+TITLE="Curve-fitting with piecewise parametric cubics",
+JOURNAL="Computer Graphics",
+VOLUME= "17",
+ISSUE = "3",
+PAGES= "229--239",
+YEAR=1983
+}
