@@ -91,7 +91,8 @@ function convertToBezier(filename)
     splitCount = 0; % Counts number of splits.
     
     % Error treshold for each curve.
-    treshold = ((max(X(1, :)) + max(X(2, :))) / 2) / 10^3;
+    % - CHANGE THIS VALUE TO ADJUST CURVE ACCURACY -
+    treshold = ((max(X(1, :)) + max(X(2, :))) / 2) / 10^3;   
     
     % Makes a Bezier curve between every corner point.
     while c < length(C)
@@ -184,7 +185,7 @@ function convertToBezier(filename)
     legend([plot1, plot2, plot3, plot4, plot5], {'Original plot', 'Original corners', 'Control point', 'Straight line between control points', 'Bezier curve'}, 'Location', 'southoutside');
     fig = figure(1);
     set(fig, 'Position', [0, 100, 1200, 800])
-    hold off;
+    %hold off;
 
 end
 
@@ -364,9 +365,12 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
     % Second derivative of XB.
     XBdd = zeros(2, l);
     
-    treshold = l/20; % Treshold 10 % of the length of the list.
-    err = l; % The difference between the next parametrization and the last one.
+    % - THESE TWO VALUES CAN BE CHANGED TO ALTER THE PARAMETRIZATION
+    % ACUURACY (maxIt = 1 gives no optimization) -
+    treshold = l/20; % Treshold 5 % of the length of the list.
     maxIt = 50; % Maximum number of iterations.
+    
+    err = l; % The difference between the next parametrization and the last one.
     it = 1; % Iteration counter.
     
     while err > treshold && it < maxIt
