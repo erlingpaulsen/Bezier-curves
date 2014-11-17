@@ -1,13 +1,15 @@
 function convertToBezier(filename)
 %CONVERTTOBEZIER Converts a shape from an image to a set of Bezier
 %curves, and plots both the original curve and the Bezier curves. 
-%The image is assumed to consist of a single object whose outline is desired.
+%The image is assumed to consist of a single object whose outline
+%is a closed discrete curve.
 %
 %   INPUT: filename (A string containing the filename of a picture, e.g 'batman.jpg')
 %
 %   CONVERTTOBEZIER(filename) will convert the shape found in
 %   a picture with the specified filename to Bezier curves if the
 %   picture is located in the root.
+%
 %   CONVERTTOBEZIER uses several local functions:
 %       distance
 %       initT
@@ -40,7 +42,6 @@ function convertToBezier(filename)
     m = min(X(2,:));
     X(2,:) = X(2,:) - m; 
 
-
     % Checks if the outline is a closed discrete curve.
     if norm(X(:,1)-X(:,end),inf) < eps
         X = X(:,1:end-1); % Remove the last point so every point is included 
@@ -48,7 +49,6 @@ function convertToBezier(filename)
     else
         error('The outline is not a closed discrete curve');
     end
-
 
     s = 2; % Smoothing parameter. Higher value results in more smoothing.
 
@@ -64,14 +64,13 @@ function convertToBezier(filename)
     % parameters of the algorithm to get a satisfactory result.
     C = detectCorners(X);
 
-
     % Plots the discrete curve.
-    plot(X(1,[1:end,1]),X(2,[1:end,1]),'k-','LineWidth',1);
+    plot1 = plot(X(1,[1:end,1]),X(2,[1:end,1]),'k-','LineWidth',1);
     axis equal;
 
     % Overlays the found corner points.
     hold on;
-    plot(X(1,C),X(2,C),'b*','MarkerSize',10);
+    plot2 = plot(X(1,C),X(2,C),'b*','MarkerSize',10);
     
     % Adds the first corner as the last corner with the right index.
     tempC = C;
@@ -87,27 +86,11 @@ function convertToBezier(filename)
     tangent = [];
     
     c = 1; % Counter for while loop.
-    
-    % Error treshold for each curve.
     errList = []; % A list with the error for each curve.
     colorFlag = 1; % For coloring adjacent curves.
     splitCount = 0; % Counts number of splits.
     
-    %xtest = linspace(0, 1, 1000);
-    %ytest = sin(pi*xtest);
-%     xtest = [-2.0000000000000000 -1.9900095166399880 -1.9604352202265733 -1.9124473886531921 -1.8479270408896213 -1.7693657878779678 -1.6797334297990107 -1.5823205857872562 -1.4805650134826276 -1.3778711689435199 -1.2774329231045609 -1.1820691689841958 -1.0940813343339346 -1.0151405971764766 -0.9462109540099681 -0.8875123034485414 -0.8385254915624213 -0.7980389416901280 -0.7642341894453175 -0.7348054902675931 -0.7071067811865477 -0.6783177647010343 -0.6456198244848970 -0.6063719385004512 -0.5582767551049996 -0.4995275418736065 -0.4289277750600726 -0.3459766513932762 -0.2509156895939807 -0.1447337423783132 -0.0291300417718178  0.0935627759435417  0.2204915028125257  0.3484248994685338  0.4739181455454290  0.5934901854586080  0.7038042352542520  0.8018415342404277  0.8850587907655991  0.9515206646401961  0.9999999999999998];
-%     ytest = [-0.0000000000000002  0.0785196081826872  0.1569174458721380  0.2350691476799097  0.3128452182202336  0.3901086156222856  0.4667125105489297  0.5424982747558325  0.6172937494799466  0.6909118393701043  0.7631494723325429  0.8337869596396903  0.9025877840308228  0.9692988364166278  1.0336511142920473  1.0953608871751803  1.1541313264407198  1.2096545889237820  1.2616143357542522  1.3096886601626476  1.3535533905932737  1.3928857284824336  1.4273681736161741  1.4566926841738781  1.4805650134826271  1.4987091612341636  1.5108718735219759  1.5168271235984572  1.5163805037762810  1.5093734584351104  1.4956872886612853  1.4752468606462859  1.4480239525869567  1.4140401784394196  1.3733694314378115  1.3261397957431493  1.2725348808683927  1.2127945405527212  1.1472149454394973  1.0761479871471193  1.0000000000000004];
-%     X = [];
-%     X(1, :) = xtest;
-%     X(2, :) = ytest;
-%     C = [];
-%     C(1) = 1;
-%     %C(2) = 1000;
-%     C(2) = 41;
-%     hold off;
-%     plot(xtest, ytest);
-%     hold on;
-
+    % Error treshold for each curve.
     treshold = ((max(X(1, :)) + max(X(2, :))) / 2) / 10^3;
     
     % Makes a Bezier curve between every corner point.
@@ -122,8 +105,8 @@ function convertToBezier(filename)
         
         [height, width] = size(tangent);
         
-        vprev = [];
-        vnext = [];
+        vprev = []; % Stores a tangent vector if the specific corner point
+        vnext = []; % has to maintain C1 continuity.
         
         % Checks if a corner point is a split point, if so v0 and v3 are
         % given, to maintain C1 continuity.
@@ -183,7 +166,7 @@ function convertToBezier(filename)
     
     % Plotting all the Bezier curves.
     for i = 1 : length(curves(:, 1))
-        plotCubicBezier([curves(i, 1), curves(i, 2)], [curves(i, 3), curves(i, 4)],...
+        [plot3, plot4, plot5] = plotCubicBezier([curves(i, 1), curves(i, 2)], [curves(i, 3), curves(i, 4)],...
             [curves(i, 5), curves(i, 6)], [curves(i, 7), curves(i, 8)], curves(i, 9));
     end
     
@@ -191,27 +174,23 @@ function convertToBezier(filename)
     fprintf('----------------------------- RESULTS -------------------------------\n');
     fprintf('Number of splits: %i\n', splitCount);
     fprintf('Number of curves: %i\n', length(curves(:, 1)));
-    fprintf('Total curve error: %f\n\n', totErr);
-    fprintf('Discription of plot:\n');
-    fprintf('    - Blue star: Original corner point\n');
-    fprintf('    - Red dots: Bezier curve control point\n');
-    fprintf('    - Red stippled line: Straight line between control points\n');
-    fprintf('    - Thin black line: Original curve\n');
-    fprintf('    - Blue or green line: Bezier curve\n');
+    fprintf('Total curve error: %f\n', totErr);
     fprintf('----------------------------------------------------------------------\n');
     
+    % Modifies the plot.
     title('Bezier curve plot');
     xlabel('x');
     ylabel('y');
+    legend([plot1, plot2, plot3, plot4, plot5], {'Original plot', 'Original corners', 'Control point', 'Straight line between control points', 'Bezier curve'}, 'Location', 'southoutside');
     fig = figure(1);
-    set(fig, 'Position', [0, 100, 1200, 800]) % Plot size and position.
+    set(fig, 'Position', [0, 100, 1200, 800])
     hold off;
 
 end
 
 function d = distance(P0, P1, P2, P3, X, ts)
 %DISTANCE Calculates the distance bewteen each point of the original curve
-%and the Bezier curve.
+%and the Bezier curve in a point given by the parametrization.
 %   
 %   INPUT: P0, P1, P2, P3 (Control points for the Bezier curve)
 %          X (Poins describing the original curve)
@@ -251,7 +230,7 @@ function d = distance(P0, P1, P2, P3, X, ts)
 end
 
 function t = initT(X)
-%INITT Creates a initial parametrization of t based on the points
+%INITT Creates an initial parametrization of t based on the points
 %   
 %   INPUT: X (Poins describing the original curve)
 %
@@ -273,8 +252,8 @@ function t = initT(X)
 end
 
 function [P0, P1, P2, P3] = fitCurve(X, ti, vprev, vnext)
-%FITCURVE Creates the four Bezier control points from x- and y-coordinates
-%by parametrization and curve fitting.
+%FITCURVE Creates the four Bezier control points by least square
+%approximation for the best fit.
 %
 %   INPUT: X (Poins describing the original curve)
 %          ti (Parametrization, 0 < t < 1)
@@ -289,14 +268,18 @@ function [P0, P1, P2, P3] = fitCurve(X, ti, vprev, vnext)
     % Number of points
     m = length(X(1, :));
     
+    % Creates a step 5 % into the line, used to create a tanget line
+    % fitting the curve better.
     step = ceil(m/100 * 5);
     if step == 1, step = 2; end
 
+    % Initial tangent vectors in the start and end point.
     v0 = [X(1, step) - X(1, 1), X(2, step) - X(2, 1)];
     v0 = v0/norm(v0);
     v3 = [X(1, m - step) - X(1, m), X(2, m - step) - X(2, m)];
     v3 = v3/norm(v3);
     
+    % Changes the initial vectors if C1 continuity has to be maintained.
     if isempty(vprev) && ~isempty(vnext)
         v0 = vnext;
     elseif isempty(vnext) && ~isempty(vprev)
@@ -306,21 +289,25 @@ function [P0, P1, P2, P3] = fitCurve(X, ti, vprev, vnext)
         v0 = vnext;
     end
 
-    
+    % First and last control points.
     P0 = [X(1, 1), X(2, 1)];
     P3 = [X(1, m), X(2, m)]; 
     
+    % Variables created to solve the least square approximation.
+    % (See paper for further explanation)
     A1 = 0;
     A12 = 0;
     A2 = 0;
     A11 = 0;
     A22 = 0;
+    Z = 0;
     
     % Counter
     i = 1;
     
     for t = ti
         
+        % Bernstein polynomials.
         B0 = (1 - t)^3;
         B1 = 3 * t * (1 - t)^2;
         B2 = 3 * t^2 * (1 - t);
@@ -338,16 +325,19 @@ function [P0, P1, P2, P3] = fitCurve(X, ti, vprev, vnext)
         
     end
     
-    if (A11 * A22 - A12 * A12) < 10^(-6)
+    % To prevent dividing by zero.
+    if (A11 * A22 - A12 * A12) < 10^(-18)
         dist = X(:, 1) - X(:, m);
-        k = norm(dist)/3;
-        a1 = k;
+        k = norm(dist)/3; % 1/3 of the length between P0 and P3, as a rough
+        a1 = k;           % approximation.
         a2 = k;
     else
         a1 = (A22 * A1 - A2 * A12) / (A11 * A22 - A12 * A12);
         a2 = (A11 * A2 - A1 * A12) / (A11 * A22 - A12 * A12);
     end
     
+    % Scaling up P0 and P3 by a factor times the tangent vector to obtain
+    % P1 and P2.
     P1 = P0 + a1*v0;
     P2 = P3 + a2*v3;
 
@@ -374,7 +364,7 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
     % Second derivative of XB.
     XBdd = zeros(2, l);
     
-    treshold = l/10; % Treshold 10 % of the length of the list.
+    treshold = l/20; % Treshold 10 % of the length of the list.
     err = l; % The difference between the next parametrization and the last one.
     maxIt = 50; % Maximum number of iterations.
     it = 1; % Iteration counter.
@@ -480,25 +470,29 @@ function [split, v3] = splitBezier(P0, P1, P2, P3, X, t)
 
 end
 
-function plotCubicBezier(P0, P1, P2, P3, colorFlag)
+function [plot3, plot4, plot5] = plotCubicBezier(P0, P1, P2, P3, colorFlag)
 %PLOTCUBICBEZIER Plots a cubic Bezier curve given by the x- and
-%y-coordinated of four distinct points.
+%y-coordinated of four control points points. It also plots the control
+%points and a stippled red line between them.
 %
 %   INPUT: P0, P1, P2, P3 (Control points for the Bezier curve)
 %          colorFlag (A counter that decides the color of the curve)
 %
-
+%   OUTPUT: plot3, plot4, plot5 (Plot handles to be used in the plot
+%                                legend)
+%
+    
     X = [P0(1), P1(1), P2(1), P3(1)];
     Y = [P0(2), P1(2), P2(2), P3(2)];
     
     % Plots the four control points with filled red circles.
-    plot(P0(1), P0(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
+    plot3 = plot(P0(1), P0(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
     plot(P1(1), P1(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
     plot(P2(1), P2(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
     plot(P3(1), P3(2), 'Marker', 'o', 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'r', 'MarkerSize', 3);
     
     % Plots straight, stippled, red lines between the control points.
-    plot(X, Y, 'LineStyle', '--', 'LineWidth', 1, 'Color', 'r');
+    plot4 = plot(X, Y, 'LineStyle', '--', 'LineWidth', 1, 'Color', 'r');
     
     % The step size for 0 < t < 1.
     step = 0.0001;
@@ -522,10 +516,10 @@ function plotCubicBezier(P0, P1, P2, P3, colorFlag)
     
     if mod(colorFlag, 2) == 0
         % Plotting the Bezier curve in green.
-        plot(xB, yB, 'LineWidth', 1.5, 'Color', [0 0.8 0]);
+        plot5 = plot(xB, yB, 'LineWidth', 1.5, 'Color', [0 0.8 0]);
     else
         % Plotting the Bezier curve in blue.
-        plot(xB, yB, 'LineWidth', 1.5, 'Color', 'b');
+        plot5 = plot(xB, yB, 'LineWidth', 1.5, 'Color', 'b');
     end
     
     axis equal;
