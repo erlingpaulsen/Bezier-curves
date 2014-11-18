@@ -85,7 +85,7 @@ function convertToBezier(filename)
     % Matrix to store all the cruve info for plotting.
     curves = [];
     
-    % Tangent stack to maintain C1 continuity when splitting occurs.
+    % Tangent matrix to maintain C1 continuity when splitting occurs.
     tangent = [];
     
     c = 1; % Counter for while loop.
@@ -132,35 +132,39 @@ function convertToBezier(filename)
         % Initial curve.
         [P0, P1, P2, P3] = fitCurve(Xc, ti, vprev, vnext);
         
-        % Optimizing parametrization.
+        % Optimizing parametrization with Newton-Raphson method.
         t = ti;
         t = optimizeParam(P0, P1, P2, P3, Xc, t);
         
         % Improved curve.
         [P0, P1, P2, P3] = fitCurve(Xc, t, vprev, vnext);
         
-        % Calculating the distance between each point in the original point
+        % Calculating the distance between each point in the original curve
         % and the Bezier curve.
         d = distance(P0, P1, P2, P3, Xc, t);
         
-        % The sum of the distance over the curve.
+        % Curve error.
         err = sum(d) / length(d);
         
         % Splits the curve if the error is greater than the treshold and
-        % the number of points in the curve are greater than 10.
+        % the number of points in the curve are greater than 8.
         if err > treshold && l > 8
-            % Index of the split point in Xc, and v0, v3 with C1
-            % continuity.
-            [corner, vprev] = splitBezier(P0, P1, P2, P3, Xc, t);
-            splitCount = splitCount + 1;
             
-            % Inserting the new corner point index in C, and a 1 in flag.
+            % Index of the split point in Xc, and tangent vector
+            % to maintain C1 continuity.
+            [corner, vprev] = splitBezier(P0, P1, P2, P3, Xc, t);
+            
+            splitCount = splitCount + 1; % Counts the split
+            
+            % Inserting the new corner point index in C.
             temp = C;
             C = [temp(1 : c), corner + temp(c), temp(c + 1 : length(temp))];
             
+            % Adding the split point and its corresponding tangent vector.
             tangent = [tangent; vprev', temp(c) + corner];
             
-        % Stores the curve in curves if error is below the treshold
+        % Stores the curve in curves if error is below the treshold or the
+        % segment is already too short.
         else
             curves = [curves; P0, P1, P2, P3, colorFlag];
             colorFlag = colorFlag + 1; % Incrementing the colorFlag.
@@ -198,20 +202,20 @@ function convertToBezier(filename)
 end
 
 function d = distance(P0, P1, P2, P3, X, ts)
-%DISTANCE Calculates the distance bewteen each point of the original curve
+%DISTANCE Calculates the square error bewteen each point of the original curve
 %and the Bezier curve in a point given by the parametrization.
 %   
 %   INPUT: P0, P1, P2, P3 (Control points for the Bezier curve)
 %          X (Poins describing the original curve)
 %          ts (Parametrization, 0 < t < 1)
 %
-%   OUTPUT: d (A list with the distance between corresponding points)
+%   OUTPUT: d (A list with the sqaure errors between corresponding points)
 %
     
     l = length(X(1, :)); % Curve length.
 
     XB = zeros(2, l); % Points along the Bezier curve
-    sX = zeros(2,l); % Distance between the original curve and the Bezier curve in
+    sX = zeros(2,l); % Square between the original curve and the Bezier curve in
                      % x and y direction.
 
     count = 1;
@@ -233,13 +237,14 @@ function d = distance(P0, P1, P2, P3, X, ts)
         sX(:, i) = ((XB(:, i)) - X(:, i)).^2;
     end
     
-    % Summing the distance in x and y.
+    % Summing the square in x and y.
     d = sX(1, :) + sX(2, :);
 
 end
 
 function t = initT(X)
-%INITT Creates an initial parametrization of t based on the points
+%INITT Creates an initial parametrization of t based on the euclidean
+%distance between the points.
 %   
 %   INPUT: X (Poins describing the original curve)
 %
@@ -249,7 +254,6 @@ function t = initT(X)
    m = length(X(1, :)); % Curve length.
    d = zeros(1, m);
 
-   %initial t
    for i = 1 : m - 1
        % List of cummulative length between points.
        d(i + 1) = d(i) + (sqrt((X(1, i + 1) - X(1, i))^2 + (X(2, i + 1) - X(2, i))^2));
@@ -309,7 +313,7 @@ function [P0, P1, P2, P3] = fitCurve(X, ti, vprev, vnext)
     A2 = 0;
     A11 = 0;
     A22 = 0;
-    Z = 0;
+    Z = [];
     
     % Counter
     i = 1;
@@ -363,18 +367,17 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
 %                 method)
 %
     
-    l = length(X(1, :));
-    oldT = zeros(1, l);
+    l = length(X(1, :)); % Curve length.
+    oldT = zeros(1, l); % To calculate the differences after each iteration.
     newT = ti;
-    % Points along the Bezier curve.
+    % Points along the Bezier curve and its derivatives.
     XB = zeros(2, l);
-    % Derivative of XB.
     XBd = zeros(2, l);
-    % Second derivative of XB.
     XBdd = zeros(2, l);
     
     % - THESE TWO VALUES CAN BE CHANGED TO ALTER THE PARAMETRIZATION
     % ACUURACY (maxIt = 1 gives no optimization) -
+    %
     treshold = l/20; % Treshold 5 % of the length of the list.
     maxIt = 50; % Maximum number of iterations.
     
@@ -429,7 +432,8 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
                 % Does not change the t, if the Newton-Raphson would divide
                 % by zero.
             else
-                newT(i)= newT(i) - ((sXd(1, i) + sXd(2, i)) / (sXdd(1, i) + sXdd(2, i)));
+                % Calculates the t's by the Newton-Raphson method.
+                newT(i) = newT(i) - ((sXd(1, i) + sXd(2, i)) / (sXdd(1, i) + sXdd(2, i)));
             end
             
         end
@@ -443,8 +447,10 @@ function newT = optimizeParam(P0, P1, P2, P3, X, ti)
 end
 
 function [split, v3] = splitBezier(P0, P1, P2, P3, X, t)
-%SPLITBEZIER Splits a Bezier curve at maximum error point, and return four
-%new control points for two new Bezier curves
+%SPLITBEZIER Splits a Bezier curve at maximum error point, and returns the
+%split point index and a tangent vector to maintain C1 continuity in this
+%point. If the split point is too close to one of the ends, it will split in
+%the middle.
 % 
 %   INPUT: P0, P1, P2, P3 (Control points for the Bezier curve)
 %          X (Poins describing the original curve)
@@ -483,9 +489,8 @@ function [split, v3] = splitBezier(P0, P1, P2, P3, X, t)
 end
 
 function [plot3, plot4, plot5] = plotCubicBezier(P0, P1, P2, P3, colorFlag)
-%PLOTCUBICBEZIER Plots a cubic Bezier curve given by the x- and
-%y-coordinated of four control points points. It also plots the control
-%points and a stippled red line between them.
+%PLOTCUBICBEZIER Plots a cubic Bezier curve given by the four control points. 
+%It also plots the control points and a stippled red line between them.
 %
 %   INPUT: P0, P1, P2, P3 (Control points for the Bezier curve)
 %          colorFlag (A counter that decides the color of the curve)
