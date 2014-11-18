@@ -4,6 +4,9 @@ function convertToBezier(filename)
 %The image is assumed to consist of a single object whose outline
 %is a closed discrete curve.
 %
+%   THIS PROGRAM IS CREATED BY THE STUDENTS: 741972, 730633, 741967 and
+%   741956.
+%
 %   INPUT: filename (A string containing the filename of a picture, e.g 'batman.jpg')
 %
 %   CONVERTTOBEZIER(filename) will convert the shape found in
@@ -90,8 +93,13 @@ function convertToBezier(filename)
     colorFlag = 1; % For coloring adjacent curves.
     splitCount = 0; % Counts number of splits.
     
-    % Error treshold for each curve.
+    % Error treshold for each curve. We use the mean value of the maximun X
+    % and Y values divided by a factor to set the treshold.
+    %
     % - CHANGE THIS VALUE TO ADJUST CURVE ACCURACY -
+    %   For figure 4 in the report: Change '10^3' to '10^-1'
+    %   For figure 5 in the report: Keep treshold as it is.
+    %
     treshold = ((max(X(1, :)) + max(X(2, :))) / 2) / 10^3;   
     
     % Makes a Bezier curve between every corner point.
@@ -185,7 +193,7 @@ function convertToBezier(filename)
     legend([plot1, plot2, plot3, plot4, plot5], {'Original plot', 'Original corners', 'Control point', 'Straight line between control points', 'Bezier curve'}, 'Location', 'southoutside');
     fig = figure(1);
     set(fig, 'Position', [0, 100, 1200, 800])
-    %hold off;
+    hold off;
 
 end
 
